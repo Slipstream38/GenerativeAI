@@ -1,0 +1,40 @@
+alias: FRIGATE / Generative AI / Notification
+description: ""
+# Change the treigger to suit yourself. Not sure what works best for me yet.
+trigger:
+  - platform: mqtt
+    topic: frigate/events
+    payload: Front
+condition: []
+action:
+  - service: camera.snapshot
+    metadata: {}
+    data:
+      filename: www/latest_front.jpg
+    target:
+      entity_id: camera.front
+# You need to add the generative AI integration first.
+  - service: google_generative_ai_conversation.generate_content
+    metadata: {}
+    data:
+      image_filename: www/latest_front.jpg
+      prompt: >-
+        Very briefly describe what you see in this image, but only if the image
+        has a person or a dog in it,  from my front gate security camera. Your
+        message needs to be short to fit in a phone notification. Don't describe
+        stationary objects or buildings or the black gate and black letterbox.
+    response_variable: generated_content
+# This is set up for an iPhone using the camera entity
+  - service: notify.mobile_app_youriphone
+    data:
+      message: " {{ generated_content.text }} "
+      data:
+        entity_id: camera.front
+        push:
+          category: camera
+  - service: notify.mobile_app_yourandroid
+    data:
+      message: " {{ generated_content.text }} "
+      data:
+        image: local/latest_front.jpg
+mode: single
